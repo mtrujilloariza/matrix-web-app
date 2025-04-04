@@ -66,6 +66,15 @@
   background-color: #45a049;
 }
 
+.controls button.disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+.controls button.disabled:hover {
+  background-color: #cccccc;
+}
+
 .status-message {
   padding: 0.5rem 1rem;
   border-radius: 4px;

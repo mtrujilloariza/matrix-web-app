@@ -166,7 +166,13 @@ const MatrixCanvas: React.FC<MatrixCanvasProps> = ({
           onChange={(e) => setColor(e.target.value)}
         />
         <button onClick={clearCanvas}>Clear</button>
-        <button onClick={saveImage}>Save</button>
+        <button 
+          onClick={saveImage}
+          disabled={!artistName.trim() || !artworkName.trim()}
+          className={!artistName.trim() || !artworkName.trim() ? 'disabled' : ''}
+        >
+          Save
+        </button>
       </div>
       {status && <div className="status-message">{status}</div>}
       <canvas

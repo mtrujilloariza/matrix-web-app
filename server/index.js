@@ -1,5 +1,5 @@
 import express from 'express';
-import { exec, spawn } from 'child_process';
+import { exec } from 'child_process';
 import bodyParser from 'body-parser';
 import fs from 'fs';
 import path from 'path';
@@ -33,39 +33,6 @@ app.use(bodyParser.json({ limit: '10mb' })); // Increase limit for base64 images
 //     res.status(500).send(error.message);
 //   }
 // });
-
-let pingProcess;
-
-app.get('/api/startPing', (req, res) => {
-  if (!pingProcess) {
-    pingProcess = spawn('ping', ['google.com']);
-
-    pingProcess.stdout.on('data', (data) => {
-      console.log(`Received: ${data}`);
-      // You can process or send this output as needed (e.g., emit it to clients via WebSocket, etc.)
-    });
-
-    pingProcess.stderr.on('data', (data) => {
-      console.error(`Error: ${data}`);
-    });
-
-    res.send('Ping started');
-  } else {
-    res.send('Ping already running');
-  }
-});
-
-app.get('/api/stopPing', (req, res) => {
-  if (pingProcess) {
-    pingProcess.kill();
-    pingProcess = null;
-    res.send('Ping stopped');
-  } else {
-    res.send('No ping running');
-  }
-});
-
-let ledServerProcess;
 
 app.get('/api/startLEDServer', (req, res) => {
   try {
@@ -118,24 +85,6 @@ app.get('/api/restartLEDServer', (req, res) => {
   }
 });
 
-app.post('/api/sendImage', (req, res) => {
-  if(true){
-    console.log(`curl -s ${req.body.img} | ./server/bin/send-image -g 64x64 -h localhost -`)
-
-    exec(`curl -s ${req.body.img} | ./server/bin/send-image -g 64x64 -h localhost -`, (error, stdout, stderr) => {
-      if (error) {
-        console.error(`exec error: ${error}`);
-        return;
-      }
-      console.log(`stdout: ${stdout}`);
-      console.error(`stderr: ${stderr}`);
-    });
-    res.send('Img recieved')
-  } else {
-    res.send('No LED Server running')
-  }
-})
-
 app.post('/api/saveMatrixImage', (req, res) => {
   try {
     const { imageData, artistName, artworkName } = req.body;
@@ -176,6 +125,24 @@ app.post('/api/saveMatrixImage', (req, res) => {
     });
   }
 });
+
+app.post('/api/sendImage', (req, res) => {
+  if(true){
+    console.log(`curl -s ${req.body.img} | ./server/bin/send-image -g 64x64 -h localhost -`)
+
+    exec(`curl -s ${req.body.img} | ./server/bin/send-image -g 64x64 -h localhost -`, (error, stdout, stderr) => {
+      if (error) {
+        console.error(`exec error: ${error}`);
+        return;
+      }
+      console.log(`stdout: ${stdout}`);
+      console.error(`stderr: ${stderr}`);
+    });
+    res.send('Img recieved')
+  } else {
+    res.send('No LED Server running')
+  }
+})
 
 app.listen(3000, () => {
   console.log('Server running on port 3000');
