@@ -92,8 +92,8 @@ const MatrixCanvas: React.FC<MatrixCanvasProps> = ({
     const y = Math.floor((clientY - rect.top) / pixelSize);
 
     if (x >= 0 && x < width && y >= 0 && y < height) {
-      // Draw black pixel
-      ctx.fillStyle = '#000000';
+      // Draw with selected color
+      ctx.fillStyle = color;
       ctx.fillRect(x * pixelSize, y * pixelSize, pixelSize, pixelSize);
     }
   };
