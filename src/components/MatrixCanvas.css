@@ -4,22 +4,38 @@
   align-items: center;
   gap: 1rem;
   padding: 1rem;
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
 }
 
 .artist-info {
   display: flex;
   gap: 2rem;
   margin-bottom: 1rem;
+  width: 100%;
+  flex-wrap: wrap;
+  justify-content: center;
 }
 
 .input-group {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  min-width: 200px;
+  flex: 1;
+  max-width: 300px;
 }
 
 .input-group label {
   font-size: 0.9rem;
+  color: #333;
+}
+
+@media (prefers-color-scheme: dark) {
+  .input-group label {
+    color: #fff;
+  }
 }
 
 .input-group input[type="text"] {
@@ -27,7 +43,7 @@
   border: 1px solid #ccc;
   border-radius: 4px;
   font-size: 1rem;
-  min-width: 200px;
+  width: 100%;
 }
 
 .input-group input[type="text"]:focus {
@@ -40,15 +56,47 @@
   display: flex;
   gap: 1rem;
   align-items: center;
+  flex-wrap: wrap;
+  justify-content: center;
+  width: 100%;
+  margin-bottom: 1rem;
+}
+
+.color-picker-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.color-picker-container label {
+  font-size: 0.9rem;
+  color: #333;
+}
+
+@media (prefers-color-scheme: dark) {
+  .color-picker-container label {
+    color: #fff;
+  }
+}
+
+.color-picker-wrapper {
+  padding: 3px;
+  border: 2px solid #4CAF50;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .controls input[type="color"] {
-  width: 50px;
-  height: 50px;
+  width: 44px;
+  height: 44px;
   padding: 0;
   border: none;
   border-radius: 50%;
   cursor: pointer;
+  background: none;
 }
 
 .controls button {
@@ -59,10 +107,16 @@
   color: white;
   cursor: pointer;
   transition: background-color 0.3s;
+  min-width: 80px;
 }
 
 .controls button:hover {
   background-color: #45a049;
+}
+
+.controls button.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .status-message {
@@ -72,4 +126,45 @@
   color: #333;
   font-size: 0.9rem;
   transition: opacity 0.3s;
+  width: 100%;
+  text-align: center;
+}
+
+.canvas-wrapper {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 1rem;
+  overflow: hidden;
+}
+
+/* Mobile-specific styles */
+@media (max-width: 600px) {
+  .matrix-canvas-container {
+    padding: 0.5rem;
+  }
+
+  .artist-info {
+    gap: 1rem;
+  }
+
+  .input-group {
+    min-width: 100%;
+  }
+
+  .controls {
+    gap: 0.5rem;
+  }
+
+  .controls button {
+    min-width: 70px;
+    font-size: 0.9rem;
+    padding: 0.4rem 0.8rem;
+  }
+
+  .controls input[type="color"] {
+    width: 40px;
+    height: 40px;
+  }
 } 

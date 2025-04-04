@@ -12,9 +12,11 @@
     "vite": "vite --host"
   },
   "dependencies": {
+    "@use-gesture/react": "^10.3.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-router-dom": "^7.4.1"
+    "react-router-dom": "^7.4.1",
+    "react-use-gesture": "^9.1.3"
   },
   "devDependencies": {
     "@types/node": "^20.10.6",

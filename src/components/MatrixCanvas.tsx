@@ -1,4 +1,5 @@
 import { useRef, useState, useEffect } from 'react';
+import { useDrag } from '@use-gesture/react';
 import './MatrixCanvas.css';
 
 interface MatrixCanvasProps {
@@ -10,15 +11,42 @@ interface MatrixCanvasProps {
 const MatrixCanvas: React.FC<MatrixCanvasProps> = ({
   width = 64,
   height = 64,
-  pixelSize = 8,
+  pixelSize: initialPixelSize = 8,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
-  const [color, setColor] = useState('#000000');
+  const [color, setColor] = useState('#FFFFFF');
   const [status, setStatus] = useState<string | null>(null);
   const [artistName, setArtistName] = useState('');
   const [artworkName, setArtworkName] = useState('');
+  const [pixelSize, setPixelSize] = useState(initialPixelSize);
 
+  // Calculate responsive pixel size
+  useEffect(() => {
+    const updateCanvasSize = () => {
+      if (!containerRef.current) return;
+      
+      const container = containerRef.current;
+      const containerWidth = container.clientWidth;
+      const containerHeight = window.innerHeight * 0.6; // Use 60% of viewport height
+      
+      // Calculate the pixel size that would fit the container
+      const horizontalPixelSize = Math.floor(containerWidth / width);
+      const verticalPixelSize = Math.floor(containerHeight / height);
+      
+      // Use the smaller of the two to ensure the canvas fits
+      const newPixelSize = Math.max(1, Math.min(horizontalPixelSize, verticalPixelSize));
+      
+      setPixelSize(newPixelSize);
+    };
+
+    updateCanvasSize();
+    window.addEventListener('resize', updateCanvasSize);
+    return () => window.removeEventListener('resize', updateCanvasSize);
+  }, [width, height]);
+
+  // Initialize canvas
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -30,12 +58,12 @@ const MatrixCanvas: React.FC<MatrixCanvasProps> = ({
     canvas.width = width * pixelSize;
     canvas.height = height * pixelSize;
 
-    // Fill with white background
-    ctx.fillStyle = '#FFFFFF';
+    // Fill with black background
+    ctx.fillStyle = '#000000';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Draw grid
-    ctx.strokeStyle = '#CCCCCC';
+    // Draw grid with darker lines for better visibility on black
+    ctx.strokeStyle = '#333333';
     ctx.lineWidth = 0.5;
     for (let i = 0; i <= width; i++) {
       ctx.beginPath();
@@ -51,9 +79,7 @@ const MatrixCanvas: React.FC<MatrixCanvasProps> = ({
     }
   }, [width, height, pixelSize]);
 
-  const draw = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!isDrawing) return;
-    
+  const drawPixel = (clientX: number, clientY: number) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -61,14 +87,24 @@ const MatrixCanvas: React.FC<MatrixCanvasProps> = ({
     if (!ctx) return;
 
     const rect = canvas.getBoundingClientRect();
-    const x = Math.floor((e.clientX - rect.left) / pixelSize);
-    const y = Math.floor((e.clientY - rect.top) / pixelSize);
+    const x = Math.floor((clientX - rect.left) / pixelSize);
+    const y = Math.floor((clientY - rect.top) / pixelSize);
 
     if (x >= 0 && x < width && y >= 0 && y < height) {
       ctx.fillStyle = color;
       ctx.fillRect(x * pixelSize, y * pixelSize, pixelSize, pixelSize);
     }
   };
+
+  // Mouse and touch event handling
+  const bind = useDrag(({ event, active, first, xy: [x, y] }) => {
+    event.preventDefault();
+    if (first) setIsDrawing(true);
+    if (active && isDrawing) {
+      drawPixel(x, y);
+    }
+    if (!active) setIsDrawing(false);
+  });
 
   const clearCanvas = () => {
     const canvas = canvasRef.current;
@@ -77,11 +113,12 @@ const MatrixCanvas: React.FC<MatrixCanvasProps> = ({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    ctx.fillStyle = '#FFFFFF';
+    // Fill with black background
+    ctx.fillStyle = '#000000';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Redraw grid
-    ctx.strokeStyle = '#CCCCCC';
+    // Redraw grid with darker lines
+    ctx.strokeStyle = '#333333';
     ctx.lineWidth = 0.5;
     for (let i = 0; i <= width; i++) {
       ctx.beginPath();
@@ -136,7 +173,7 @@ const MatrixCanvas: React.FC<MatrixCanvasProps> = ({
   };
 
   return (
-    <div className="matrix-canvas-container">
+    <div className="matrix-canvas-container" ref={containerRef}>
       <div className="artist-info">
         <div className="input-group">
           <label htmlFor="artistName">Your Name:</label>
@@ -160,11 +197,17 @@ const MatrixCanvas: React.FC<MatrixCanvasProps> = ({
         </div>
       </div>
       <div className="controls">
-        <input
-          type="color"
-          value={color}
-          onChange={(e) => setColor(e.target.value)}
-        />
+        <div className="color-picker-container">
+          <label htmlFor="colorPicker">Pen Color</label>
+          <div className="color-picker-wrapper">
+            <input
+              id="colorPicker"
+              type="color"
+              value={color}
+              onChange={(e) => setColor(e.target.value)}
+            />
+          </div>
+        </div>
         <button onClick={clearCanvas}>Clear</button>
         <button 
           onClick={saveImage}
@@ -175,17 +218,19 @@ const MatrixCanvas: React.FC<MatrixCanvasProps> = ({
         </button>
       </div>
       {status && <div className="status-message">{status}</div>}
-      <canvas
-        ref={canvasRef}
-        onMouseDown={() => setIsDrawing(true)}
-        onMouseUp={() => setIsDrawing(false)}
-        onMouseMove={draw}
-        onMouseLeave={() => setIsDrawing(false)}
-        style={{
-          border: '1px solid #000',
-          cursor: 'crosshair',
-        }}
-      />
+      <div className="canvas-wrapper">
+        <canvas
+          ref={canvasRef}
+          {...bind()}
+          style={{
+            border: '1px solid #000',
+            cursor: 'crosshair',
+            touchAction: 'none',
+            maxWidth: '100%',
+            height: 'auto'
+          }}
+        />
+      </div>
     </div>
   );
 };
