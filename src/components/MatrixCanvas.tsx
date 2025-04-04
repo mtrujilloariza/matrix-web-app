@@ -142,36 +142,20 @@ const MatrixCanvas: React.FC<MatrixCanvasProps> = ({
       const canvas = canvasRef.current;
       const imageData = canvas.toDataURL('image/png');
       
-      const response = await fetch('/api/saveMatrixImage', {
+      await fetch('/api/saveMatrixImage', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ imageData }),
+        body: JSON.stringify({ 
+          imageData,
+          artistName: artistName.trim(),
+          artworkName: artworkName.trim()
+        }),
       });
-      
-      const result = await response.json();
-      
-      if (result.success) {
-        // After saving, send the image to display
-        await fetch('api/sendImage', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ img: `/matrix-images/${result.filename}` }),
-        });
-        
-        setMessage('Image saved and displayed successfully!');
-      } else {
-        setMessage('Failed to save image.');
-      }
     } catch (error) {
       console.error('Error saving image:', error);
-      setMessage('Error saving image.');
     }
-    
-    setTimeout(() => setMessage(''), 3000);
   };
 
   return (

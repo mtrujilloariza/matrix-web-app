@@ -137,6 +137,19 @@ app.post('/api/saveMatrixImage', (req, res) => {
     // Save the image
     fs.writeFileSync(filePath, base64Data, 'base64');
     
+    // Send the image to display if LED server is running
+    if (ftServerProcess) {
+      const imageUrl = `/matrix-images/${filename}`;
+      exec(`curl -s ${imageUrl} | ./server/bin/send-image -g 64x64 -h localhost -`, (error, stdout, stderr) => {
+        if (error) {
+          console.error(`Error displaying image: ${error}`);
+        }
+        if (stderr) {
+          console.error(`stderr: ${stderr}`);
+        }
+      });
+    }
+    
     res.json({ 
       success: true, 
       filename,
