@@ -7,6 +7,40 @@ import path from 'path';
 const app = express();
 let ftServerProcess = null;
 
+// Function to start ft-server
+const startFtServer = () => {
+  try {
+    ftServerProcess = spawn('sudo', [
+      '/home/pi/flaschen-taschen/server/ft-server',
+      '--led-rows=64',
+      '--led-cols=64',
+      '--led-gpio-mapping=adafruit-hat-pwm',
+      '--led-slowdown-gpio=5'
+    ], {
+      stdio: 'inherit',
+      detached: true
+    });
+
+    ftServerProcess.on('error', (err) => {
+      console.error('Failed to start LED server:', err);
+    });
+
+    ftServerProcess.on('exit', (code) => {
+      console.log('LED server process exited with code:', code);
+      ftServerProcess = null;
+    });
+
+    console.log('LED server started successfully');
+    return true;
+  } catch (error) {
+    console.error('Error starting LED server:', error);
+    return false;
+  }
+};
+
+// Start ft-server when Node.js server starts
+startFtServer();
+
 // Add CORS headers
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
@@ -42,23 +76,11 @@ app.get('/api/startLEDServer', (req, res) => {
       return;
     }
 
-    ftServerProcess = spawn('./server/bin/ft-server', [], {
-      stdio: 'inherit',
-      detached: true
-    });
-
-    ftServerProcess.on('error', (err) => {
-      console.error('Failed to start LED server:', err);
+    if (startFtServer()) {
+      res.send('LED Server started');
+    } else {
       res.status(500).send('Failed to start LED server');
-    });
-
-    ftServerProcess.on('exit', (code) => {
-      console.log('LED server process exited with code:', code);
-      ftServerProcess = null;
-    });
-
-    console.log('LED server started successfully');
-    res.send('LED Server started');
+    }
   } catch (error) {
     console.error('Error starting LED server:', error);
     res.status(500).send('Failed to start LED server');
@@ -89,23 +111,11 @@ app.get('/api/restartLEDServer', (req, res) => {
       ftServerProcess = null;
     }
 
-    ftServerProcess = spawn('./server/bin/ft-server', [], {
-      stdio: 'inherit',
-      detached: true
-    });
-
-    ftServerProcess.on('error', (err) => {
-      console.error('Failed to restart LED server:', err);
+    if (startFtServer()) {
+      res.send('LED Server restarted');
+    } else {
       res.status(500).send('Failed to restart LED server');
-    });
-
-    ftServerProcess.on('exit', (code) => {
-      console.log('LED server process exited with code:', code);
-      ftServerProcess = null;
-    });
-
-    console.log('LED server restarted successfully');
-    res.send('LED Server restarted');
+    }
   } catch (error) {
     console.error('Error restarting LED server:', error);
     res.status(500).send('Failed to restart LED server');
@@ -154,7 +164,7 @@ app.post('/api/saveMatrixImage', (req, res) => {
 });
 
 app.post('/api/sendImage', (req, res) => {
-  if(true){
+  if(ftServerProcess){
     console.log(`curl -s ${req.body.img} | ./server/bin/send-image -g 64x64 -h localhost -`)
 
     exec(`curl -s ${req.body.img} | ./server/bin/send-image -g 64x64 -h localhost -`, (error, stdout, stderr) => {

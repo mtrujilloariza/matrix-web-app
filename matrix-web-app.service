@@ -1,0 +1,14 @@
+[Unit]
+Description=Matrix Web App Server
+After=network.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/matrix-web-app
+ExecStart=/usr/bin/node server/index.js
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target 
