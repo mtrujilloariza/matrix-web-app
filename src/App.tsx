@@ -1,5 +1,6 @@
 import { ChangeEvent, useState } from 'react';
 import './App.css'
+import MatrixCanvas from './components/MatrixCanvas';
 
 
 // async function executeServerCommand(command: string) {
@@ -55,6 +56,16 @@ async function stopLEDServer() {
   }
 }
 
+async function restartLEDServer() {
+  try {
+    const response = await fetch('/api/restartLEDServer');
+    const result = await response.text();
+    console.log(result);
+  } catch (error) {
+    console.error('Failed to restart LED server:', error);
+  }
+}
+
 async function sendImage(url: string) {
   try {
     const response = await fetch('api/sendImage', {
@@ -75,7 +86,6 @@ async function sendImage(url: string) {
 }
 
 function App() {
-
   const [inputText, setInputText] = useState('');
   
   const handleInputChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -90,26 +100,35 @@ function App() {
   return (
     <>
       <h1>LED MATRIX TEST</h1>
-      <button onClick={() => {
-        startPing()
-      }}>Start Ping</button>
+      <div className="controls">
+        <button onClick={() => {
+          startPing()
+        }}>Start Ping</button>
 
-      <button onClick={() => {
-        stopPing()
-      }}>Stop Ping</button>
+        <button onClick={() => {
+          stopPing()
+        }}>Stop Ping</button>
 
-      <button onClick={() => {
-        startLEDServer()
-      }}>Start LED SERVER</button>
+        <button onClick={() => {
+          startLEDServer()
+        }}>Start LED SERVER</button>
 
-      <button onClick={() => {
-        stopLEDServer()
-      }}>Stop LED SERVER</button>
+        <button onClick={() => {
+          stopLEDServer()
+        }}>Stop LED SERVER</button>
 
-      <img src={inputText}/>
+        <button onClick={() => {
+          restartLEDServer()
+        }}>Restart LED SERVER</button>
+      </div>
 
-      <input onChange={handleInputChange}/>
-      <button onClick={handleInputSubmit}>Send Image</button>
+      <div className="image-input">
+        <img src={inputText} alt="Preview"/>
+        <input onChange={handleInputChange}/>
+        <button onClick={handleInputSubmit}>Send Image</button>
+      </div>
+
+      <MatrixCanvas />
     </>
   )
 }
