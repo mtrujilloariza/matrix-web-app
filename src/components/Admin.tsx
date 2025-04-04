@@ -86,6 +86,7 @@ function Admin() {
   const [errorDetails, setErrorDetails] = useState<string | null>(null);
   const [savedImages, setSavedImages] = useState<SavedImage[]>([]);
   const [selectedImage, setSelectedImage] = useState<SavedImage | null>(null);
+  const [message, setMessage] = useState('');
 
   useEffect(() => {
     // Fetch LED service status and saved images when component mounts
@@ -100,7 +101,26 @@ function Admin() {
 
   const handleImageSelect = async (image: SavedImage) => {
     setSelectedImage(image);
-    await handleAction(() => sendImage(image.url), `Displaying ${image.name}...`);
+    try {
+      const response = await fetch('/api/sendImage', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ img: image.url }),
+      });
+      
+      if (response.ok) {
+        setMessage('Image sent to display');
+      } else {
+        setMessage('Failed to send image to display');
+      }
+    } catch (error) {
+      console.error('Error sending image:', error);
+      setMessage('Error sending image to display');
+    }
+    
+    setTimeout(() => setMessage(''), 3000);
   };
 
   const handleAction = async (action: () => Promise<void>, message: string) => {

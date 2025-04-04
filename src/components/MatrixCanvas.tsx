@@ -151,6 +151,10 @@ const MatrixCanvas: React.FC<MatrixCanvasProps> = ({
       const tempCtx = tempCanvas.getContext('2d');
       if (!tempCtx) return;
 
+      // Fill with white background
+      tempCtx.fillStyle = '#FFFFFF';
+      tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+
       // Copy the original canvas
       tempCtx.drawImage(canvas, 0, 0);
 
@@ -166,6 +170,11 @@ const MatrixCanvas: React.FC<MatrixCanvasProps> = ({
           data[i] = 0;
           data[i + 1] = 0;
           data[i + 2] = 0;
+        } else {
+          // Make background white
+          data[i] = 255;
+          data[i + 1] = 255;
+          data[i + 2] = 255;
         }
       }
 
