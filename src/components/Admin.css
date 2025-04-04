@@ -100,4 +100,94 @@
   word-wrap: break-word;
   font-family: monospace;
   font-size: 0.9rem;
+}
+
+.cycle-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.interval-setting {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.interval-setting label {
+  font-size: 0.9rem;
+  color: #333;
+}
+
+.interval-setting input[type="number"] {
+  width: 80px;
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.cycle-status {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.image-list {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #ccc;
+}
+
+.image-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.image-item {
+  padding: 0.5rem;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.last-displayed {
+  color: #4CAF50;
+  font-size: 0.8rem;
+  font-style: italic;
+}
+
+@media (prefers-color-scheme: dark) {
+  .interval-setting label {
+    color: #fff;
+  }
+
+  .image-item {
+    background-color: #2a2a2a;
+  }
+
+  .interval-setting input[type="number"] {
+    background-color: #2a2a2a;
+    color: #fff;
+    border-color: #444;
+  }
+
+  .interval-setting input[type="number"]:focus {
+    border-color: #4CAF50;
+  }
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 } 

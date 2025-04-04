@@ -1,0 +1,7 @@
+{
+  "imageDisplayConfig": {
+    "cycleIntervalSeconds": 30,
+    "lastDisplayedImage": null,
+    "isAutoCycling": true
+  }
+}

@@ -62,16 +62,121 @@ async function testLEDService() {
   }
 }
 
+interface Config {
+  imageDisplayConfig: {
+    cycleIntervalSeconds: number;
+    lastDisplayedImage: string | null;
+    isAutoCycling: boolean;
+  };
+}
+
+interface Image {
+  filename: string;
+  path: string;
+}
+
 function Admin() {
   const [status, setStatus] = useState<string | null>(null);
   const [imageUrl, setImageUrl] = useState('');
   const [ledServiceStatus, setLEDServiceStatus] = useState<string>('Loading...');
   const [errorDetails, setErrorDetails] = useState<string | null>(null);
+  const [config, setConfig] = useState<Config | null>(null);
+  const [images, setImages] = useState<Image[]>([]);
+  const [cycleInterval, setCycleInterval] = useState<number>(30);
 
   useEffect(() => {
     // Fetch LED service status when component mounts
     handleTestLEDService();
+    // Fetch config and images
+    fetchConfig();
+    fetchImages();
   }, []);
+
+  const fetchConfig = async () => {
+    try {
+      const response = await fetch('/api/config');
+      const data = await response.json();
+      setConfig(data);
+      setCycleInterval(data.imageDisplayConfig.cycleIntervalSeconds);
+    } catch (error) {
+      console.error('Failed to fetch config:', error);
+    }
+  };
+
+  const fetchImages = async () => {
+    try {
+      const response = await fetch('/api/images');
+      const data = await response.json();
+      setImages(data);
+    } catch (error) {
+      console.error('Failed to fetch images:', error);
+    }
+  };
+
+  const handleUpdateInterval = async () => {
+    try {
+      const response = await fetch('/api/config', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ cycleIntervalSeconds: cycleInterval }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to update interval');
+      }
+
+      const data = await response.json();
+      setConfig(data.config);
+      setStatus('Cycle interval updated successfully');
+      setTimeout(() => setStatus(null), 3000);
+    } catch (error) {
+      console.error('Failed to update interval:', error);
+      setStatus('Failed to update cycle interval');
+      setTimeout(() => setStatus(null), 3000);
+    }
+  };
+
+  const handleStartCycle = async () => {
+    try {
+      const response = await fetch('/api/startCycle', {
+        method: 'POST',
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to start cycle');
+      }
+
+      await fetchConfig();
+      setStatus('Image cycling started');
+      setTimeout(() => setStatus(null), 3000);
+    } catch (error) {
+      console.error('Failed to start cycle:', error);
+      setStatus('Failed to start image cycling');
+      setTimeout(() => setStatus(null), 3000);
+    }
+  };
+
+  const handleStopCycle = async () => {
+    try {
+      const response = await fetch('/api/stopCycle', {
+        method: 'POST',
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to stop cycle');
+      }
+
+      await fetchConfig();
+      setStatus('Image cycling stopped');
+      setTimeout(() => setStatus(null), 3000);
+    } catch (error) {
+      console.error('Failed to stop cycle:', error);
+      setStatus('Failed to stop image cycling');
+      setTimeout(() => setStatus(null), 3000);
+    }
+  };
 
   const handleAction = async (action: () => Promise<void>, message: string) => {
     setStatus(message);
@@ -128,7 +233,7 @@ function Admin() {
           <h2>LED Server Controls</h2>
           <div className="status-indicator">
             <span className={`status-dot ${ledServiceStatus.toLowerCase()}`}></span>
-            <p>LED Service Status: {ledServiceStatus}</p>
+            <span>LED Service Status: {ledServiceStatus}</span>
           </div>
           <button onClick={handleTestLEDService}>Check LED Service Status</button>
           <button onClick={() => handleAction(startLEDServer, 'Starting LED server...')}>
@@ -140,11 +245,45 @@ function Admin() {
           <button onClick={() => handleAction(restartLEDServer, 'Restarting LED server...')}>
             Restart LED SERVER
           </button>
-          {errorDetails && (
-            <div className="error-details">
-              <pre>{errorDetails}</pre>
+        </div>
+
+        <div className="control-group">
+          <h2>Image Cycling Controls</h2>
+          <div className="cycle-controls">
+            <div className="interval-setting">
+              <label htmlFor="cycleInterval">Cycle Interval (seconds):</label>
+              <input
+                id="cycleInterval"
+                type="number"
+                min="1"
+                value={cycleInterval}
+                onChange={(e) => setCycleInterval(Number(e.target.value))}
+              />
+              <button onClick={handleUpdateInterval}>Update Interval</button>
             </div>
-          )}
+            <div className="cycle-status">
+              <span>Status: {config?.imageDisplayConfig.isAutoCycling ? 'Running' : 'Stopped'}</span>
+              <button onClick={handleStartCycle} disabled={config?.imageDisplayConfig.isAutoCycling}>
+                Start Cycling
+              </button>
+              <button onClick={handleStopCycle} disabled={!config?.imageDisplayConfig.isAutoCycling}>
+                Stop Cycling
+              </button>
+            </div>
+          </div>
+          <div className="image-list">
+            <h3>Available Images ({images.length})</h3>
+            <div className="image-grid">
+              {images.map((image) => (
+                <div key={image.filename} className="image-item">
+                  <span>{image.filename}</span>
+                  {config?.imageDisplayConfig.lastDisplayedImage === image.filename && (
+                    <span className="last-displayed">(Last Displayed)</span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
 
         <div className="control-group">
@@ -163,6 +302,11 @@ function Admin() {
       </div>
 
       {status && <div className="status-message">{status}</div>}
+      {errorDetails && (
+        <div className="error-details">
+          <pre>{errorDetails}</pre>
+        </div>
+      )}
     </div>
   );
 }
