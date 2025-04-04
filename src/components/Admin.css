@@ -23,16 +23,13 @@
 }
 
 .control-group {
-  background-color: #f8f9fa;
   padding: 1.5rem;
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .control-group h2 {
   margin-top: 0;
   margin-bottom: 1rem;
-  color: #333;
 }
 
 .control-group button {
@@ -55,8 +52,6 @@
   margin-top: 1rem;
   padding: 0.5rem 1rem;
   border-radius: 4px;
-  background-color: #f8f9fa;
-  color: #333;
   font-size: 0.9rem;
   transition: opacity 0.3s;
 }
@@ -93,7 +88,6 @@
 .error-details {
   margin-top: 1rem;
   padding: 1rem;
-  background-color: #f8f8f8;
   border: 1px solid #ddd;
   border-radius: 4px;
   max-height: 300px;
@@ -106,5 +100,4 @@
   word-wrap: break-word;
   font-family: monospace;
   font-size: 0.9rem;
-  color: #333;
 } 

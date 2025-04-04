@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import './Admin.css';
 
@@ -65,14 +65,21 @@ async function testLEDService() {
 function Admin() {
   const [status, setStatus] = useState<string | null>(null);
   const [imageUrl, setImageUrl] = useState('');
-  const [ledServiceStatus, setLEDServiceStatus] = useState<string>('Unknown');
+  const [ledServiceStatus, setLEDServiceStatus] = useState<string>('Loading...');
   const [errorDetails, setErrorDetails] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Fetch LED service status when component mounts
+    handleTestLEDService();
+  }, []);
 
   const handleAction = async (action: () => Promise<void>, message: string) => {
     setStatus(message);
     setErrorDetails(null);
     try {
       await action();
+      // After any action, refresh the LED service status
+      await handleTestLEDService();
       setStatus(null);
     } catch (error: any) {
       setStatus(`Error: ${error.message}`);
@@ -121,7 +128,7 @@ function Admin() {
           <h2>LED Server Controls</h2>
           <div className="status-indicator">
             <span className={`status-dot ${ledServiceStatus.toLowerCase()}`}></span>
-            <span>LED Service Status: {ledServiceStatus}</span>
+            <p>LED Service Status: {ledServiceStatus}</p>
           </div>
           <button onClick={handleTestLEDService}>Check LED Service Status</button>
           <button onClick={() => handleAction(startLEDServer, 'Starting LED server...')}>
