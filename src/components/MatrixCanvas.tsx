@@ -59,12 +59,12 @@ const MatrixCanvas: React.FC<MatrixCanvasProps> = ({
     canvas.width = width * pixelSize;
     canvas.height = height * pixelSize;
 
-    // Fill with white background
-    ctx.fillStyle = '#FFFFFF';
+    // Fill with black background
+    ctx.fillStyle = '#000000';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Draw grid with lighter lines
-    ctx.strokeStyle = '#CCCCCC';
+    // Draw grid with darker lines for better visibility on black
+    ctx.strokeStyle = '#333333';
     ctx.lineWidth = 0.5;
     for (let i = 0; i <= width; i++) {
       ctx.beginPath();
@@ -92,8 +92,8 @@ const MatrixCanvas: React.FC<MatrixCanvasProps> = ({
     const y = Math.floor((clientY - rect.top) / pixelSize);
 
     if (x >= 0 && x < width && y >= 0 && y < height) {
-      // Draw black pixel
-      ctx.fillStyle = '#000000';
+      // Draw with selected color
+      ctx.fillStyle = color;
       ctx.fillRect(x * pixelSize, y * pixelSize, pixelSize, pixelSize);
     }
   };
@@ -115,12 +115,12 @@ const MatrixCanvas: React.FC<MatrixCanvasProps> = ({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Fill with white background
-    ctx.fillStyle = '#FFFFFF';
+    // Fill with black background
+    ctx.fillStyle = '#000000';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Redraw grid with lighter lines
-    ctx.strokeStyle = '#CCCCCC';
+    // Redraw grid with darker lines
+    ctx.strokeStyle = '#333333';
     ctx.lineWidth = 0.5;
     for (let i = 0; i <= width; i++) {
       ctx.beginPath();
@@ -144,7 +144,7 @@ const MatrixCanvas: React.FC<MatrixCanvasProps> = ({
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
 
-      // Create a temporary canvas to invert the colors
+      // Create a temporary canvas to process the image
       const tempCanvas = document.createElement('canvas');
       tempCanvas.width = canvas.width;
       tempCanvas.height = canvas.height;
@@ -158,16 +158,11 @@ const MatrixCanvas: React.FC<MatrixCanvasProps> = ({
       const imageData = tempCtx.getImageData(0, 0, canvas.width, canvas.height);
       const data = imageData.data;
 
-      // Invert the colors (black becomes white, white becomes black)
+      // Process the image data
       for (let i = 0; i < data.length; i += 4) {
-        // If the pixel is black (changed by user)
-        if (data[i] === 0 && data[i + 1] === 0 && data[i + 2] === 0) {
-          // Keep it black
-          data[i] = 0;
-          data[i + 1] = 0;
-          data[i + 2] = 0;
-        } else {
-          // Make white pixels black
+        // If the pixel is not black (changed by user)
+        if (data[i] !== 0 || data[i + 1] !== 0 || data[i + 2] !== 0) {
+          // Make it black
           data[i] = 0;
           data[i + 1] = 0;
           data[i + 2] = 0;
