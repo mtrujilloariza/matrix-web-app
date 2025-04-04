@@ -2,6 +2,12 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import './Admin.css';
 
+interface SavedImage {
+  name: string;
+  url: string;
+  created: string;
+}
+
 async function startLEDServer() {
   try {
     const response = await fetch('/api/startLEDServer');
@@ -62,17 +68,15 @@ async function testLEDService() {
   }
 }
 
-interface Config {
-  imageDisplayConfig: {
-    cycleIntervalSeconds: number;
-    lastDisplayedImage: string | null;
-    isAutoCycling: boolean;
-  };
-}
-
-interface Image {
-  filename: string;
-  path: string;
+async function fetchSavedImages(): Promise<SavedImage[]> {
+  try {
+    const response = await fetch('/api/getMatrixImages');
+    const data = await response.json();
+    return data.success ? data.images : [];
+  } catch (error) {
+    console.error('Failed to fetch saved images:', error);
+    return [];
+  }
 }
 
 function Admin() {
@@ -80,102 +84,23 @@ function Admin() {
   const [imageUrl, setImageUrl] = useState('');
   const [ledServiceStatus, setLEDServiceStatus] = useState<string>('Loading...');
   const [errorDetails, setErrorDetails] = useState<string | null>(null);
-  const [config, setConfig] = useState<Config | null>(null);
-  const [images, setImages] = useState<Image[]>([]);
-  const [cycleInterval, setCycleInterval] = useState<number>(30);
+  const [savedImages, setSavedImages] = useState<SavedImage[]>([]);
+  const [selectedImage, setSelectedImage] = useState<SavedImage | null>(null);
 
   useEffect(() => {
-    // Fetch LED service status when component mounts
+    // Fetch LED service status and saved images when component mounts
     handleTestLEDService();
-    // Fetch config and images
-    fetchConfig();
-    fetchImages();
+    loadSavedImages();
   }, []);
 
-  const fetchConfig = async () => {
-    try {
-      const response = await fetch('/api/config');
-      const data = await response.json();
-      setConfig(data);
-      setCycleInterval(data.imageDisplayConfig.cycleIntervalSeconds);
-    } catch (error) {
-      console.error('Failed to fetch config:', error);
-    }
+  const loadSavedImages = async () => {
+    const images = await fetchSavedImages();
+    setSavedImages(images);
   };
 
-  const fetchImages = async () => {
-    try {
-      const response = await fetch('/api/images');
-      const data = await response.json();
-      setImages(data);
-    } catch (error) {
-      console.error('Failed to fetch images:', error);
-    }
-  };
-
-  const handleUpdateInterval = async () => {
-    try {
-      const response = await fetch('/api/config', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ cycleIntervalSeconds: cycleInterval }),
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to update interval');
-      }
-
-      const data = await response.json();
-      setConfig(data.config);
-      setStatus('Cycle interval updated successfully');
-      setTimeout(() => setStatus(null), 3000);
-    } catch (error) {
-      console.error('Failed to update interval:', error);
-      setStatus('Failed to update cycle interval');
-      setTimeout(() => setStatus(null), 3000);
-    }
-  };
-
-  const handleStartCycle = async () => {
-    try {
-      const response = await fetch('/api/startCycle', {
-        method: 'POST',
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to start cycle');
-      }
-
-      await fetchConfig();
-      setStatus('Image cycling started');
-      setTimeout(() => setStatus(null), 3000);
-    } catch (error) {
-      console.error('Failed to start cycle:', error);
-      setStatus('Failed to start image cycling');
-      setTimeout(() => setStatus(null), 3000);
-    }
-  };
-
-  const handleStopCycle = async () => {
-    try {
-      const response = await fetch('/api/stopCycle', {
-        method: 'POST',
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to stop cycle');
-      }
-
-      await fetchConfig();
-      setStatus('Image cycling stopped');
-      setTimeout(() => setStatus(null), 3000);
-    } catch (error) {
-      console.error('Failed to stop cycle:', error);
-      setStatus('Failed to stop image cycling');
-      setTimeout(() => setStatus(null), 3000);
-    }
+  const handleImageSelect = async (image: SavedImage) => {
+    setSelectedImage(image);
+    await handleAction(() => sendImage(image.url), `Displaying ${image.name}...`);
   };
 
   const handleAction = async (action: () => Promise<void>, message: string) => {
@@ -183,7 +108,6 @@ function Admin() {
     setErrorDetails(null);
     try {
       await action();
-      // After any action, refresh the LED service status
       await handleTestLEDService();
       setStatus(null);
     } catch (error: any) {
@@ -248,46 +172,23 @@ function Admin() {
         </div>
 
         <div className="control-group">
-          <h2>Image Cycling Controls</h2>
-          <div className="cycle-controls">
-            <div className="interval-setting">
-              <label htmlFor="cycleInterval">Cycle Interval (seconds):</label>
-              <input
-                id="cycleInterval"
-                type="number"
-                min="1"
-                value={cycleInterval}
-                onChange={(e) => setCycleInterval(Number(e.target.value))}
-              />
-              <button onClick={handleUpdateInterval}>Update Interval</button>
-            </div>
-            <div className="cycle-status">
-              <span>Status: {config?.imageDisplayConfig.isAutoCycling ? 'Running' : 'Stopped'}</span>
-              <button onClick={handleStartCycle} disabled={config?.imageDisplayConfig.isAutoCycling}>
-                Start Cycling
-              </button>
-              <button onClick={handleStopCycle} disabled={!config?.imageDisplayConfig.isAutoCycling}>
-                Stop Cycling
-              </button>
-            </div>
-          </div>
-          <div className="image-list">
-            <h3>Available Images ({images.length})</h3>
-            <div className="image-grid">
-              {images.map((image) => (
-                <div key={image.filename} className="image-item">
-                  <span>{image.filename}</span>
-                  {config?.imageDisplayConfig.lastDisplayedImage === image.filename && (
-                    <span className="last-displayed">(Last Displayed)</span>
-                  )}
-                </div>
-              ))}
-            </div>
+          <h2>Saved Images</h2>
+          <div className="saved-images-grid">
+            {savedImages.map((image) => (
+              <div 
+                key={image.name}
+                className={`saved-image ${selectedImage?.name === image.name ? 'selected' : ''}`}
+                onClick={() => handleImageSelect(image)}
+              >
+                <img src={image.url} alt={image.name} />
+                <span className="image-name">{image.name}</span>
+              </div>
+            ))}
           </div>
         </div>
 
         <div className="control-group">
-          <h2>Send Image</h2>
+          <h2>Send External Image</h2>
           <div className="image-input">
             <img src={imageUrl} alt="Preview"/>
             <input 

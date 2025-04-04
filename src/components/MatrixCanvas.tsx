@@ -21,6 +21,7 @@ const MatrixCanvas: React.FC<MatrixCanvasProps> = ({
   const [artistName, setArtistName] = useState('');
   const [artworkName, setArtworkName] = useState('');
   const [pixelSize, setPixelSize] = useState(initialPixelSize);
+  const [message, setMessage] = useState('');
 
   // Calculate responsive pixel size
   useEffect(() => {
@@ -134,42 +135,43 @@ const MatrixCanvas: React.FC<MatrixCanvasProps> = ({
     }
   };
 
-  const saveImage = async () => {
-    if (!artistName.trim() || !artworkName.trim()) {
-      setStatus('Please enter both your name and artwork name');
-      setTimeout(() => setStatus(null), 3000);
-      return;
-    }
-
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    setStatus('Saving...');
+  const handleSave = async () => {
+    if (!canvasRef.current) return;
+    
     try {
+      const canvas = canvasRef.current;
+      const imageData = canvas.toDataURL('image/png');
+      
       const response = await fetch('/api/saveMatrixImage', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          imageData: canvas.toDataURL('image/png'),
-          artistName: artistName.trim(),
-          artworkName: artworkName.trim(),
-        }),
+        body: JSON.stringify({ imageData }),
       });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
+      
       const result = await response.json();
-      setStatus(`Image saved as ${result.filename}`);
-      setTimeout(() => setStatus(null), 3000);
+      
+      if (result.success) {
+        // After saving, send the image to display
+        await fetch('api/sendImage', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ img: `/matrix-images/${result.filename}` }),
+        });
+        
+        setMessage('Image saved and displayed successfully!');
+      } else {
+        setMessage('Failed to save image.');
+      }
     } catch (error) {
       console.error('Error saving image:', error);
-      setStatus('Failed to save image. Please try again.');
-      setTimeout(() => setStatus(null), 3000);
+      setMessage('Error saving image.');
     }
+    
+    setTimeout(() => setMessage(''), 3000);
   };
 
   return (
@@ -210,14 +212,14 @@ const MatrixCanvas: React.FC<MatrixCanvasProps> = ({
         </div>
         <button onClick={clearCanvas}>Clear</button>
         <button 
-          onClick={saveImage}
+          onClick={handleSave}
           disabled={!artistName.trim() || !artworkName.trim()}
           className={!artistName.trim() || !artworkName.trim() ? 'disabled' : ''}
         >
           Save
         </button>
       </div>
-      {status && <div className="status-message">{status}</div>}
+      {message && <div className="status-message">{message}</div>}
       <div className="canvas-wrapper">
         <canvas
           ref={canvasRef}

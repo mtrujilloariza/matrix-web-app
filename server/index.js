@@ -6,135 +6,6 @@ import path from 'path';
 
 const app = express();
 let ftServerProcess = null;
-let imageInterval = null;
-
-// Function to read config
-const readConfig = () => {
-  try {
-    const configPath = path.join(process.cwd(), 'server', 'config.json');
-    if (!fs.existsSync(configPath)) {
-      const defaultConfig = {
-        imageDisplayConfig: {
-          cycleIntervalSeconds: 30,
-          lastDisplayedImage: null,
-          isAutoCycling: false
-        }
-      };
-      fs.writeFileSync(configPath, JSON.stringify(defaultConfig, null, 2));
-      return defaultConfig;
-    }
-    return JSON.parse(fs.readFileSync(configPath, 'utf8'));
-  } catch (error) {
-    console.error('Error reading config:', error);
-    return null;
-  }
-};
-
-// Function to save config
-const saveConfig = (config) => {
-  try {
-    const configPath = path.join(process.cwd(), 'server', 'config.json');
-    fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
-    return true;
-  } catch (error) {
-    console.error('Error saving config:', error);
-    return false;
-  }
-};
-
-// Function to get all images
-const getImages = () => {
-  const imageDir = path.join(process.cwd(), 'matrix-images');
-  if (!fs.existsSync(imageDir)) {
-    fs.mkdirSync(imageDir);
-    return [];
-  }
-  return fs.readdirSync(imageDir)
-    .filter(file => file.endsWith('.png'))
-    .map(file => ({
-      filename: file,
-      path: path.join(imageDir, file)
-    }));
-};
-
-// Function to display image
-const displayImage = (imagePath) => {
-  if (!ftServerProcess) return false;
-  
-  try {
-    exec(`./server/bin/send-image -g 64x64 -h localhost ${imagePath}`, (error, stdout, stderr) => {
-      if (error) {
-        console.error(`Error displaying image: ${error}`);
-        return;
-      }
-      if (stderr) {
-        console.error(`Image display warning: ${stderr}`);
-      }
-      console.log(`Image displayed: ${imagePath}`);
-    });
-    return true;
-  } catch (error) {
-    console.error('Error displaying image:', error);
-    return false;
-  }
-};
-
-// Function to start image cycling
-const startImageCycle = () => {
-  // Clear any existing interval
-  stopImageCycle();
-
-  const config = readConfig();
-  if (!config) return false;
-
-  const images = getImages();
-  if (images.length === 0) {
-    console.log('No images found to cycle through');
-    return false;
-  }
-
-  let currentIndex = 0;
-  
-  // Find the last displayed image index
-  if (config.imageDisplayConfig.lastDisplayedImage) {
-    const lastIndex = images.findIndex(img => img.filename === config.imageDisplayConfig.lastDisplayedImage);
-    if (lastIndex !== -1) {
-      currentIndex = (lastIndex + 1) % images.length;
-    }
-  }
-
-  // Display first image immediately
-  if (displayImage(images[currentIndex].path)) {
-    // Save the current image to config
-    config.imageDisplayConfig.lastDisplayedImage = images[currentIndex].filename;
-    saveConfig(config);
-
-    // Set up interval for cycling
-    imageInterval = setInterval(() => {
-      const currentImages = getImages(); // Get fresh list of images
-      if (currentImages.length === 0) {
-        stopImageCycle();
-        return;
-      }
-      currentIndex = (currentIndex + 1) % currentImages.length;
-      if (displayImage(currentImages[currentIndex].path)) {
-        config.imageDisplayConfig.lastDisplayedImage = currentImages[currentIndex].filename;
-        saveConfig(config);
-      }
-    }, config.imageDisplayConfig.cycleIntervalSeconds * 1000);
-
-    return true;
-  }
-  return false;
-};
-
-// Function to stop image cycling
-const stopImageCycle = () => {
-  if (imageInterval) {
-    clearInterval(imageInterval);
-    imageInterval = null;
-  }
-};
 
 // Function to start ft-server
 const startFtServer = () => {
@@ -157,8 +28,6 @@ const startFtServer = () => {
     ftServerProcess.on('exit', (code) => {
       console.log('LED server process exited with code:', code);
       ftServerProcess = null;
-      // Stop image cycling if LED server exits
-      stopImageCycle();
     });
 
     console.log('LED server started successfully');
@@ -169,24 +38,8 @@ const startFtServer = () => {
   }
 };
 
-// Cleanup function
-const cleanup = () => {
-  stopImageCycle();
-  if (ftServerProcess) {
-    process.kill(-ftServerProcess.pid);
-    ftServerProcess = null;
-  }
-};
-
-// Start ft-server and image cycle on server start if it was running before
-const config = readConfig();
-if (config) {
-  if (startFtServer() && config.imageDisplayConfig.isAutoCycling) {
-    setTimeout(() => {
-      startImageCycle();
-    }, 2000); // Give the LED server time to start
-  }
-}
+// Start ft-server when Node.js server starts
+startFtServer();
 
 // Add CORS headers
 app.use((req, res, next) => {
@@ -202,19 +55,7 @@ if (!fs.existsSync(matrixImagesDir)) {
   fs.mkdirSync(matrixImagesDir);
 }
 
-app.use(bodyParser.json({ limit: '10mb' })); // Increase limit for base64 images
-
-// Endpoint to execute a bash command
-// app.get('/api/runcmd', async (req, res) => {
-//   const { command } = req.query;
-//   try {
-// 	  console.log(command)
-//     const result = await runCommand(command);
-//     res.send(result);
-//   } catch (error) {
-//     res.status(500).send(error.message);
-//   }
-// });
+app.use(bodyParser.json({ limit: '10mb' }));
 
 app.get('/api/startLEDServer', (req, res) => {
   try {
@@ -322,11 +163,11 @@ app.post('/api/sendImage', (req, res) => {
       console.log(`stdout: ${stdout}`);
       console.error(`stderr: ${stderr}`);
     });
-    res.send('Img recieved')
+    res.send('Image received')
   } else {
     res.send('No LED Server running')
   }
-})
+});
 
 // Test LED service endpoint
 app.get('/api/testLEDService', (req, res) => {
@@ -345,77 +186,47 @@ app.get('/api/testLEDService', (req, res) => {
   }
 });
 
-// Add new endpoints
-app.get('/api/config', (req, res) => {
-  const config = readConfig();
-  if (!config) {
-    res.status(500).json({ error: 'Failed to read config' });
-    return;
-  }
-  res.json(config);
-});
-
-app.post('/api/config', (req, res) => {
-  const { cycleIntervalSeconds } = req.body;
-  const config = readConfig();
-  
-  if (!config) {
-    res.status(500).json({ error: 'Failed to read config' });
-    return;
-  }
-
-  config.imageDisplayConfig.cycleIntervalSeconds = cycleIntervalSeconds;
-  
-  if (saveConfig(config)) {
-    // Restart cycling if it's active
-    if (imageInterval) {
-      stopImageCycle();
-      startImageCycle();
-    }
-    res.json({ success: true, config });
-  } else {
-    res.status(500).json({ error: 'Failed to save config' });
+// Get all saved matrix images
+app.get('/api/getMatrixImages', (req, res) => {
+  try {
+    const files = fs.readdirSync(matrixImagesDir);
+    const images = files.map(file => {
+      const filePath = path.join(matrixImagesDir, file);
+      const stats = fs.statSync(filePath);
+      return {
+        name: file,
+        url: `/matrix-images/${file}`,
+        created: stats.birthtime
+      };
+    });
+    
+    // Sort by creation date, newest first
+    images.sort((a, b) => b.created - a.created);
+    
+    res.json({ success: true, images });
+  } catch (error) {
+    console.error('Error getting matrix images:', error);
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
-app.get('/api/images', (req, res) => {
-  res.json(getImages());
-});
-
-app.post('/api/startCycle', (req, res) => {
-  const config = readConfig();
-  if (!config) {
-    res.status(500).json({ error: 'Failed to read config' });
-    return;
-  }
-
-  config.imageDisplayConfig.isAutoCycling = true;
-  saveConfig(config);
-
-  if (startImageCycle()) {
-    res.json({ success: true });
-  } else {
-    res.status(500).json({ error: 'Failed to start image cycle' });
-  }
-});
-
-app.post('/api/stopCycle', (req, res) => {
-  const config = readConfig();
-  if (!config) {
-    res.status(500).json({ error: 'Failed to read config' });
-    return;
-  }
-
-  config.imageDisplayConfig.isAutoCycling = false;
-  saveConfig(config);
-
-  stopImageCycle();
-  res.json({ success: true });
-});
+// Serve the matrix-images directory statically
+app.use('/matrix-images', express.static(matrixImagesDir));
 
 // Cleanup on server shutdown
-process.on('SIGTERM', cleanup);
-process.on('SIGINT', cleanup);
+process.on('SIGTERM', () => {
+  if (ftServerProcess) {
+    process.kill(-ftServerProcess.pid);
+  }
+  process.exit(0);
+});
+
+process.on('SIGINT', () => {
+  if (ftServerProcess) {
+    process.kill(-ftServerProcess.pid);
+  }
+  process.exit(0);
+});
 
 app.listen(3000, () => {
   console.log('Server running on port 3000');
