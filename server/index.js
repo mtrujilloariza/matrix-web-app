@@ -139,8 +139,7 @@ app.post('/api/saveMatrixImage', (req, res) => {
     
     // Send the image to display if LED server is running
     if (ftServerProcess) {
-      const imageUrl = `/matrix-images/${filename}`;
-      exec(`curl -s ${imageUrl} | ./server/bin/send-image -g 64x64 -h localhost -`, (error, stdout, stderr) => {
+      exec(`./server/bin/send-image -g 64x64 -h localhost ${filePath}`, (error, stdout, stderr) => {
         if (error) {
           console.error(`Error displaying image: ${error}`);
         }
@@ -166,19 +165,33 @@ app.post('/api/saveMatrixImage', (req, res) => {
 
 app.post('/api/sendImage', (req, res) => {
   if(ftServerProcess){
-    console.log(`curl -s ${req.body.img} | ./server/bin/send-image -g 64x64 -h localhost -`)
+    const imgPath = req.body.img;
+    let command;
 
-    exec(`curl -s ${req.body.img} | ./server/bin/send-image -g 64x64 -h localhost -`, (error, stdout, stderr) => {
+    // Check if the path is a URL (starts with http:// or https://)
+    if (imgPath.startsWith('http://') || imgPath.startsWith('https://')) {
+      command = `curl -s ${imgPath} | ./server/bin/send-image -g 64x64 -h localhost -`;
+    } else {
+      // It's a local file path
+      const filePath = path.join(process.cwd(), imgPath.replace('/matrix-images/', 'matrix-images/'));
+      command = `./server/bin/send-image -g 64x64 -h localhost ${filePath}`;
+    }
+
+    console.log(`Sending image with command: ${command}`);
+
+    exec(command, (error, stdout, stderr) => {
       if (error) {
         console.error(`exec error: ${error}`);
-        return;
+        return res.status(500).send('Failed to send image');
       }
       console.log(`stdout: ${stdout}`);
-      console.error(`stderr: ${stderr}`);
+      if (stderr) {
+        console.error(`stderr: ${stderr}`);
+      }
+      res.send('Image sent successfully');
     });
-    res.send('Image received')
   } else {
-    res.send('No LED Server running')
+    res.status(400).send('No LED Server running');
   }
 });
 
