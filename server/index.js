@@ -67,6 +67,9 @@ const displayImage = (imagePath) => {
         console.error(`Error displaying image: ${error}`);
         return;
       }
+      if (stderr) {
+        console.error(`Image display warning: ${stderr}`);
+      }
       console.log(`Image displayed: ${imagePath}`);
     });
     return true;
@@ -78,15 +81,17 @@ const displayImage = (imagePath) => {
 
 // Function to start image cycling
 const startImageCycle = () => {
-  if (imageInterval) {
-    clearInterval(imageInterval);
-  }
+  // Clear any existing interval
+  stopImageCycle();
 
   const config = readConfig();
   if (!config) return false;
 
   const images = getImages();
-  if (images.length === 0) return false;
+  if (images.length === 0) {
+    console.log('No images found to cycle through');
+    return false;
+  }
 
   let currentIndex = 0;
   
@@ -99,23 +104,28 @@ const startImageCycle = () => {
   }
 
   // Display first image immediately
-  displayImage(images[currentIndex].path);
-  
-  // Save the current image to config
-  config.imageDisplayConfig.lastDisplayedImage = images[currentIndex].filename;
-  saveConfig(config);
-
-  // Set up interval for cycling
-  imageInterval = setInterval(() => {
-    currentIndex = (currentIndex + 1) % images.length;
-    displayImage(images[currentIndex].path);
-    
-    // Update last displayed image in config
+  if (displayImage(images[currentIndex].path)) {
+    // Save the current image to config
     config.imageDisplayConfig.lastDisplayedImage = images[currentIndex].filename;
     saveConfig(config);
-  }, config.imageDisplayConfig.cycleIntervalSeconds * 1000);
 
-  return true;
+    // Set up interval for cycling
+    imageInterval = setInterval(() => {
+      const currentImages = getImages(); // Get fresh list of images
+      if (currentImages.length === 0) {
+        stopImageCycle();
+        return;
+      }
+      currentIndex = (currentIndex + 1) % currentImages.length;
+      if (displayImage(currentImages[currentIndex].path)) {
+        config.imageDisplayConfig.lastDisplayedImage = currentImages[currentIndex].filename;
+        saveConfig(config);
+      }
+    }, config.imageDisplayConfig.cycleIntervalSeconds * 1000);
+
+    return true;
+  }
+  return false;
 };
 
 // Function to stop image cycling
@@ -147,6 +157,8 @@ const startFtServer = () => {
     ftServerProcess.on('exit', (code) => {
       console.log('LED server process exited with code:', code);
       ftServerProcess = null;
+      // Stop image cycling if LED server exits
+      stopImageCycle();
     });
 
     console.log('LED server started successfully');
@@ -157,8 +169,24 @@ const startFtServer = () => {
   }
 };
 
-// Start ft-server when Node.js server starts
-startFtServer();
+// Cleanup function
+const cleanup = () => {
+  stopImageCycle();
+  if (ftServerProcess) {
+    process.kill(-ftServerProcess.pid);
+    ftServerProcess = null;
+  }
+};
+
+// Start ft-server and image cycle on server start if it was running before
+const config = readConfig();
+if (config) {
+  if (startFtServer() && config.imageDisplayConfig.isAutoCycling) {
+    setTimeout(() => {
+      startImageCycle();
+    }, 2000); // Give the LED server time to start
+  }
+}
 
 // Add CORS headers
 app.use((req, res, next) => {
@@ -385,26 +413,9 @@ app.post('/api/stopCycle', (req, res) => {
   res.json({ success: true });
 });
 
-// Start image cycle on server start if it was running before
-const config = readConfig();
-if (config && config.imageDisplayConfig.isAutoCycling) {
-  startImageCycle();
-}
-
 // Cleanup on server shutdown
-process.on('SIGTERM', () => {
-  if (ftServerProcess) {
-    process.kill(-ftServerProcess.pid);
-  }
-  process.exit(0);
-});
-
-process.on('SIGINT', () => {
-  if (ftServerProcess) {
-    process.kill(-ftServerProcess.pid);
-  }
-  process.exit(0);
-});
+process.on('SIGTERM', cleanup);
+process.on('SIGINT', cleanup);
 
 app.listen(3000, () => {
   console.log('Server running on port 3000');
