@@ -88,4 +88,23 @@
 
 .status-dot.error {
   background-color: #f44336;
+}
+
+.error-details {
+  margin-top: 1rem;
+  padding: 1rem;
+  background-color: #f8f8f8;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.error-details pre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  font-family: monospace;
+  font-size: 0.9rem;
+  color: #333;
 } 

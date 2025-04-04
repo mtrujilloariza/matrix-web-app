@@ -66,15 +66,21 @@ function Admin() {
   const [status, setStatus] = useState<string | null>(null);
   const [imageUrl, setImageUrl] = useState('');
   const [ledServiceStatus, setLEDServiceStatus] = useState<string>('Unknown');
+  const [errorDetails, setErrorDetails] = useState<string | null>(null);
 
   const handleAction = async (action: () => Promise<void>, message: string) => {
     setStatus(message);
+    setErrorDetails(null);
     try {
       await action();
       setStatus(null);
     } catch (error: any) {
       setStatus(`Error: ${error.message}`);
-      setTimeout(() => setStatus(null), 3000);
+      setErrorDetails(error.details || null);
+      setTimeout(() => {
+        setStatus(null);
+        setErrorDetails(null);
+      }, 5000);
     }
   };
 
@@ -83,11 +89,19 @@ function Admin() {
       const result = await testLEDService();
       setLEDServiceStatus(result.status);
       setStatus(result.message);
-      setTimeout(() => setStatus(null), 3000);
-    } catch (error) {
+      setErrorDetails(result.details || null);
+      setTimeout(() => {
+        setStatus(null);
+        setErrorDetails(null);
+      }, 5000);
+    } catch (error: any) {
       setLEDServiceStatus('error');
       setStatus('Failed to check LED service status');
-      setTimeout(() => setStatus(null), 3000);
+      setErrorDetails(error.details || null);
+      setTimeout(() => {
+        setStatus(null);
+        setErrorDetails(null);
+      }, 5000);
     }
   };
 
@@ -119,6 +133,11 @@ function Admin() {
           <button onClick={() => handleAction(restartLEDServer, 'Restarting LED server...')}>
             Restart LED SERVER
           </button>
+          {errorDetails && (
+            <div className="error-details">
+              <pre>{errorDetails}</pre>
+            </div>
+          )}
         </div>
 
         <div className="control-group">

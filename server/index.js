@@ -1,10 +1,11 @@
 import express from 'express';
-import { exec } from 'child_process';
+import { exec, spawn } from 'child_process';
 import bodyParser from 'body-parser';
 import fs from 'fs';
 import path from 'path';
 
 const app = express();
+let ftServerProcess = null;
 
 // Add CORS headers
 app.use((req, res, next) => {
@@ -36,15 +37,28 @@ app.use(bodyParser.json({ limit: '10mb' })); // Increase limit for base64 images
 
 app.get('/api/startLEDServer', (req, res) => {
   try {
-    exec('sudo systemctl start led-matrix', (error, stdout, stderr) => {
-      if (error) {
-        console.error(`Error starting LED server: ${error}`);
-        res.status(500).send('Failed to start LED server');
-        return;
-      }
-      console.log('LED server started successfully');
-      res.send('LED Server started');
+    if (ftServerProcess) {
+      res.status(400).send('LED server is already running');
+      return;
+    }
+
+    ftServerProcess = spawn('./server/bin/ft-server', [], {
+      stdio: 'inherit',
+      detached: true
     });
+
+    ftServerProcess.on('error', (err) => {
+      console.error('Failed to start LED server:', err);
+      res.status(500).send('Failed to start LED server');
+    });
+
+    ftServerProcess.on('exit', (code) => {
+      console.log('LED server process exited with code:', code);
+      ftServerProcess = null;
+    });
+
+    console.log('LED server started successfully');
+    res.send('LED Server started');
   } catch (error) {
     console.error('Error starting LED server:', error);
     res.status(500).send('Failed to start LED server');
@@ -53,15 +67,15 @@ app.get('/api/startLEDServer', (req, res) => {
 
 app.get('/api/stopLEDServer', (req, res) => {
   try {
-    exec('sudo systemctl stop led-matrix', (error, stdout, stderr) => {
-      if (error) {
-        console.error(`Error stopping LED server: ${error}`);
-        res.status(500).send('Failed to stop LED server');
-        return;
-      }
-      console.log('LED server stopped successfully');
-      res.send('LED Server stopped');
-    });
+    if (!ftServerProcess) {
+      res.status(400).send('LED server is not running');
+      return;
+    }
+
+    process.kill(-ftServerProcess.pid);
+    ftServerProcess = null;
+    console.log('LED server stopped successfully');
+    res.send('LED Server stopped');
   } catch (error) {
     console.error('Error stopping LED server:', error);
     res.status(500).send('Failed to stop LED server');
@@ -70,15 +84,28 @@ app.get('/api/stopLEDServer', (req, res) => {
 
 app.get('/api/restartLEDServer', (req, res) => {
   try {
-    exec('sudo systemctl restart led-matrix', (error, stdout, stderr) => {
-      if (error) {
-        console.error(`Error restarting LED server: ${error}`);
-        res.status(500).send('Failed to restart LED server');
-        return;
-      }
-      console.log('LED server restarted successfully');
-      res.send('LED Server restarted');
+    if (ftServerProcess) {
+      process.kill(-ftServerProcess.pid);
+      ftServerProcess = null;
+    }
+
+    ftServerProcess = spawn('./server/bin/ft-server', [], {
+      stdio: 'inherit',
+      detached: true
     });
+
+    ftServerProcess.on('error', (err) => {
+      console.error('Failed to restart LED server:', err);
+      res.status(500).send('Failed to restart LED server');
+    });
+
+    ftServerProcess.on('exit', (code) => {
+      console.log('LED server process exited with code:', code);
+      ftServerProcess = null;
+    });
+
+    console.log('LED server restarted successfully');
+    res.send('LED Server restarted');
   } catch (error) {
     console.error('Error restarting LED server:', error);
     res.status(500).send('Failed to restart LED server');
@@ -146,21 +173,34 @@ app.post('/api/sendImage', (req, res) => {
 
 // Test LED service endpoint
 app.get('/api/testLEDService', (req, res) => {
-  exec('systemctl is-active led-matrix', (error, stdout, stderr) => {
-    if (error) {
-      console.error(`Error checking LED service status: ${error}`);
-      res.status(500).json({ 
-        status: 'error',
-        message: 'Failed to check LED service status'
-      });
-      return;
-    }
-    const isRunning = stdout.trim() === 'active';
+  if (ftServerProcess) {
     res.json({ 
-      status: isRunning ? 'running' : 'stopped',
-      message: isRunning ? 'LED service is running' : 'LED service is stopped'
+      status: 'running',
+      message: 'LED service is running',
+      details: `Process ID: ${ftServerProcess.pid}`
     });
-  });
+  } else {
+    res.json({ 
+      status: 'stopped',
+      message: 'LED service is stopped',
+      details: 'No process running'
+    });
+  }
+});
+
+// Cleanup on server shutdown
+process.on('SIGTERM', () => {
+  if (ftServerProcess) {
+    process.kill(-ftServerProcess.pid);
+  }
+  process.exit(0);
+});
+
+process.on('SIGINT', () => {
+  if (ftServerProcess) {
+    process.kill(-ftServerProcess.pid);
+  }
+  process.exit(0);
 });
 
 app.listen(3000, () => {
