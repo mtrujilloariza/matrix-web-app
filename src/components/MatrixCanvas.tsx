@@ -59,12 +59,12 @@ const MatrixCanvas: React.FC<MatrixCanvasProps> = ({
     canvas.width = width * pixelSize;
     canvas.height = height * pixelSize;
 
-    // Fill with black background
-    ctx.fillStyle = '#000000';
+    // Fill with white background
+    ctx.fillStyle = '#FFFFFF';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Draw grid with darker lines for better visibility on black
-    ctx.strokeStyle = '#333333';
+    // Draw grid with lighter lines
+    ctx.strokeStyle = '#CCCCCC';
     ctx.lineWidth = 0.5;
     for (let i = 0; i <= width; i++) {
       ctx.beginPath();
@@ -92,8 +92,8 @@ const MatrixCanvas: React.FC<MatrixCanvasProps> = ({
     const y = Math.floor((clientY - rect.top) / pixelSize);
 
     if (x >= 0 && x < width && y >= 0 && y < height) {
-      // Draw with selected color
-      ctx.fillStyle = color;
+      // Draw black pixel
+      ctx.fillStyle = '#000000';
       ctx.fillRect(x * pixelSize, y * pixelSize, pixelSize, pixelSize);
     }
   };
@@ -115,12 +115,12 @@ const MatrixCanvas: React.FC<MatrixCanvasProps> = ({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Fill with black background
-    ctx.fillStyle = '#000000';
+    // Fill with white background
+    ctx.fillStyle = '#FFFFFF';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Redraw grid with darker lines
-    ctx.strokeStyle = '#333333';
+    // Redraw grid with lighter lines
+    ctx.strokeStyle = '#CCCCCC';
     ctx.lineWidth = 0.5;
     for (let i = 0; i <= width; i++) {
       ctx.beginPath();
@@ -141,44 +141,7 @@ const MatrixCanvas: React.FC<MatrixCanvasProps> = ({
     
     try {
       const canvas = canvasRef.current;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
-
-      // Create a temporary canvas to process the image
-      const tempCanvas = document.createElement('canvas');
-      tempCanvas.width = canvas.width;
-      tempCanvas.height = canvas.height;
-      const tempCtx = tempCanvas.getContext('2d');
-      if (!tempCtx) return;
-
-      // Fill with black background
-      tempCtx.fillStyle = '#000000';
-      tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
-
-      // Copy the original canvas
-      tempCtx.drawImage(canvas, 0, 0);
-
-      // Get the image data
-      const imageData = tempCtx.getImageData(0, 0, canvas.width, canvas.height);
-      const data = imageData.data;
-
-      // Process the image data
-      for (let i = 0; i < data.length; i += 4) {
-        // If the pixel is not black (changed by user)
-        if (data[i] !== 0 || data[i + 1] !== 0 || data[i + 2] !== 0) {
-          // Make drawn pixels white
-          data[i] = 255;
-          data[i + 1] = 255;
-          data[i + 2] = 255;
-        }
-        // Keep black pixels as is (background)
-      }
-
-      // Put the modified image data back
-      tempCtx.putImageData(imageData, 0, 0);
-
-      // Convert to base64
-      const imageDataUrl = tempCanvas.toDataURL('image/png');
+      const imageData = canvas.toDataURL('image/png');
       
       const response = await fetch('/api/saveMatrixImage', {
         method: 'POST',
@@ -186,7 +149,7 @@ const MatrixCanvas: React.FC<MatrixCanvasProps> = ({
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ 
-          imageData: imageDataUrl,
+          imageData,
           artistName: artistName.trim(),
           artworkName: artworkName.trim()
         }),
