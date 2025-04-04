@@ -175,7 +175,7 @@ const MatrixCanvas: React.FC<MatrixCanvasProps> = ({
       // Convert to base64
       const imageDataUrl = tempCanvas.toDataURL('image/png');
       
-      await fetch('/api/saveMatrixImage', {
+      const response = await fetch('/api/saveMatrixImage', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -186,9 +186,26 @@ const MatrixCanvas: React.FC<MatrixCanvasProps> = ({
           artworkName: artworkName.trim()
         }),
       });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        setMessage('Image saved successfully!');
+        // Clear the canvas after successful save
+        clearCanvas();
+        // Clear the form fields
+        setArtistName('');
+        setArtworkName('');
+      } else {
+        setMessage('Failed to save image. Please try again.');
+      }
     } catch (error) {
       console.error('Error saving image:', error);
+      setMessage('Error saving image. Please try again.');
     }
+
+    // Clear the message after 3 seconds
+    setTimeout(() => setMessage(''), 3000);
   };
 
   return (
