@@ -51,9 +51,21 @@ async function sendImage(url: string) {
   }
 }
 
+async function testLEDService() {
+  try {
+    const response = await fetch('/api/testLEDService');
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    console.error('Failed to test LED service:', error);
+    throw error;
+  }
+}
+
 function Admin() {
   const [status, setStatus] = useState<string | null>(null);
   const [imageUrl, setImageUrl] = useState('');
+  const [ledServiceStatus, setLEDServiceStatus] = useState<string>('Unknown');
 
   const handleAction = async (action: () => Promise<void>, message: string) => {
     setStatus(message);
@@ -62,6 +74,19 @@ function Admin() {
       setStatus(null);
     } catch (error: any) {
       setStatus(`Error: ${error.message}`);
+      setTimeout(() => setStatus(null), 3000);
+    }
+  };
+
+  const handleTestLEDService = async () => {
+    try {
+      const result = await testLEDService();
+      setLEDServiceStatus(result.status);
+      setStatus(result.message);
+      setTimeout(() => setStatus(null), 3000);
+    } catch (error) {
+      setLEDServiceStatus('error');
+      setStatus('Failed to check LED service status');
       setTimeout(() => setStatus(null), 3000);
     }
   };
@@ -80,6 +105,11 @@ function Admin() {
       <div className="controls">
         <div className="control-group">
           <h2>LED Server Controls</h2>
+          <div className="status-indicator">
+            <span className={`status-dot ${ledServiceStatus.toLowerCase()}`}></span>
+            <span>LED Service Status: {ledServiceStatus}</span>
+          </div>
+          <button onClick={handleTestLEDService}>Check LED Service Status</button>
           <button onClick={() => handleAction(startLEDServer, 'Starting LED server...')}>
             Start LED SERVER
           </button>

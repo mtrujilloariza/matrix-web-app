@@ -51,26 +51,6 @@
   background-color: #45a049;
 }
 
-.image-input {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1rem;
-}
-
-.image-input img {
-  max-width: 200px;
-  max-height: 200px;
-  border: 1px solid #ccc;
-}
-
-.image-input input {
-  width: 100%;
-  padding: 0.5rem;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-}
-
 .status-message {
   margin-top: 1rem;
   padding: 0.5rem 1rem;
@@ -79,4 +59,33 @@
   color: #333;
   font-size: 0.9rem;
   transition: opacity 0.3s;
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.status-dot.running {
+  background-color: #4CAF50;
+}
+
+.status-dot.stopped {
+  background-color: #f44336;
+}
+
+.status-dot.unknown {
+  background-color: #ff9800;
+}
+
+.status-dot.error {
+  background-color: #f44336;
 } 

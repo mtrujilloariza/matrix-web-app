@@ -144,6 +144,25 @@ app.post('/api/sendImage', (req, res) => {
   }
 })
 
+// Test LED service endpoint
+app.get('/api/testLEDService', (req, res) => {
+  exec('systemctl is-active led-matrix', (error, stdout, stderr) => {
+    if (error) {
+      console.error(`Error checking LED service status: ${error}`);
+      res.status(500).json({ 
+        status: 'error',
+        message: 'Failed to check LED service status'
+      });
+      return;
+    }
+    const isRunning = stdout.trim() === 'active';
+    res.json({ 
+      status: isRunning ? 'running' : 'stopped',
+      message: isRunning ? 'LED service is running' : 'LED service is stopped'
+    });
+  });
+});
+
 app.listen(3000, () => {
   console.log('Server running on port 3000');
 });
