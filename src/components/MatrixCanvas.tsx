@@ -151,6 +151,10 @@ const MatrixCanvas: React.FC<MatrixCanvasProps> = ({
       const tempCtx = tempCanvas.getContext('2d');
       if (!tempCtx) return;
 
+      // Fill with black background
+      tempCtx.fillStyle = '#000000';
+      tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+
       // Copy the original canvas
       tempCtx.drawImage(canvas, 0, 0);
 
@@ -162,14 +166,12 @@ const MatrixCanvas: React.FC<MatrixCanvasProps> = ({
       for (let i = 0; i < data.length; i += 4) {
         // If the pixel is not black (changed by user)
         if (data[i] !== 0 || data[i + 1] !== 0 || data[i + 2] !== 0) {
-          // Make drawn pixels black
-          data[i] = 0;
-          data[i + 1] = 0;
-          data[i + 2] = 0;
-        } else {
-          // Keep background black
-          continue;
+          // Make drawn pixels white
+          data[i] = 255;
+          data[i + 1] = 255;
+          data[i + 2] = 255;
         }
+        // Keep black pixels as is (background)
       }
 
       // Put the modified image data back
