@@ -6,7 +6,8 @@ After=network.target
 Type=simple
 User=pi
 WorkingDirectory=/home/pi/matrix-web-app
-ExecStart=/bin/bash -c 'nginx -c /home/pi/matrix-web-app/nginx.conf && npm run start:server:prod'
+ExecStart=/usr/bin/node server/index.js
+Environment=NODE_ENV=production
 Restart=always
 RestartSec=10
 

@@ -14,8 +14,74 @@ if ! command -v nginx &> /dev/null; then
     sudo apt-get install -y nginx
 fi
 
-# Copy nginx configuration
-sudo cp nginx.conf /etc/nginx/sites-available/matrix-web-app
+# Backup original nginx config
+sudo mv /etc/nginx/nginx.conf /etc/nginx/nginx.conf.bak
+
+# Create new nginx config
+sudo tee /etc/nginx/nginx.conf << 'EOF'
+user www-data;
+worker_processes auto;
+pid /run/nginx.pid;
+include /etc/nginx/modules-enabled/*.conf;
+
+events {
+    worker_connections 768;
+}
+
+http {
+    sendfile on;
+    tcp_nopush on;
+    tcp_nodelay on;
+    keepalive_timeout 65;
+    types_hash_max_size 2048;
+
+    include /etc/nginx/mime.types;
+    default_type application/octet-stream;
+
+    ssl_protocols TLSv1 TLSv1.1 TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers on;
+
+    access_log /var/log/nginx/access.log;
+    error_log /var/log/nginx/error.log;
+
+    gzip on;
+
+    include /etc/nginx/conf.d/*.conf;
+    include /etc/nginx/sites-enabled/*;
+}
+EOF
+
+# Create site configuration
+sudo tee /etc/nginx/sites-available/matrix-web-app << 'EOF'
+server {
+    listen 4173;
+    server_name localhost;
+
+    root /home/pi/matrix-web-app/dist;
+    index index.html;
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    location /api {
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+
+    location /static {
+        alias /home/pi/matrix-web-app/dist/static;
+        expires 1y;
+        add_header Cache-Control "public, no-transform";
+    }
+}
+EOF
+
+# Enable site configuration
 sudo ln -sf /etc/nginx/sites-available/matrix-web-app /etc/nginx/sites-enabled/
 sudo rm -f /etc/nginx/sites-enabled/default
 
