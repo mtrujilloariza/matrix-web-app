@@ -19,8 +19,9 @@ sudo cp -r dist/* /var/www/matrix-web-app/
 
 # Set correct permissions
 echo "Setting permissions..."
-sudo chown -R www-data:www-data /var/www/matrix-web-app
-sudo chmod -R 755 /var/www/matrix-web-app
+sudo chown -R pi:www-data /var/www/matrix-web-app
+sudo chmod -R 775 /var/www/matrix-web-app
+sudo chmod g+s /var/www/matrix-web-app/matrix-images
 
 # Install nginx if not already installed
 if ! command -v nginx &> /dev/null; then
