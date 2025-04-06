@@ -110,16 +110,13 @@ function Admin() {
       });
       
       if (response.ok) {
-        setMessage('Image sent to display');
+        console.log('Image sent to display');
       } else {
-        setMessage('Failed to send image to display');
+        console.error('Failed to send image to display');
       }
     } catch (error) {
       console.error('Error sending image:', error);
-      setMessage('Error sending image to display');
-    }
-    
-    setTimeout(() => setMessage(''), 3000);
+    }    
   };
 
   const handleAction = async (action: () => Promise<void>, message: string) => {
