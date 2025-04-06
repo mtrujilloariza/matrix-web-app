@@ -9,9 +9,8 @@ mkdir -p /home/pi/matrix-images
 
 # Set correct permissions for the dist directory
 echo "Setting permissions..."
-sudo chown -R pi:www-data /home/pi/matrix-web-app/dist
-sudo chmod -R 750 /home/pi/matrix-web-app/dist
-sudo chmod g+s /home/pi/matrix-web-app/dist
+sudo chown -R pi:pi /home/pi/matrix-web-app/dist
+sudo chmod -R 755 /home/pi/matrix-web-app/dist
 
 # Install nginx if not already installed
 if ! command -v nginx &> /dev/null; then
