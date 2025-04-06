@@ -6,7 +6,7 @@
 # Create web directory
 echo "Creating web directory..."
 sudo mkdir -p /var/www/matrix-web-app
-sudo mkdir -p /home/pi/matrix-images
+sudo mkdir -p /home/pi/matrix-web-app/matrix-images
 
 # Copy build files to web directory
 echo "Copying build files..."
@@ -16,8 +16,8 @@ sudo cp -r dist/* /var/www/matrix-web-app/
 echo "Setting permissions..."
 sudo chown -R www-data:www-data /var/www/matrix-web-app
 sudo chmod -R 755 /var/www/matrix-web-app
-sudo chown -R www-data:www-data /home/pi/matrix-images
-sudo chmod -R 755 /home/pi/matrix-images
+sudo chown -R www-data:www-data /home/pi/matrix-web-app/matrix-images
+sudo chmod -R 755 /home/pi/matrix-web-app/matrix-images
 
 # Install nginx if not already installed
 if ! command -v nginx &> /dev/null; then
@@ -82,7 +82,7 @@ server {
 
     # Handle matrix images
     location /matrix-images/ {
-        alias /home/pi/matrix-images/;
+        alias /home/pi/matrix-web-app/matrix-images/;
         autoindex on;
         expires 1h;
         add_header Cache-Control "public, no-transform";
@@ -140,4 +140,7 @@ echo "To view logs: sudo journalctl -u matrix-web-app -f"
 echo "To view nginx logs: sudo tail -f /var/log/nginx/error.log"
 echo ""
 echo "The UI will be available at: http://localhost:4173"
-echo "The API server will be available at: http://localhost:3000" 
+echo "The API server will be available at: http://localhost:3000"
+
+sudo systemctl stop matrix-web-app
+sudo systemctl stop nginx 
