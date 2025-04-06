@@ -1,15 +1,14 @@
 [Unit]
-Description=Matrix Web App
+Description=Matrix Web App Service
 After=network.target
 
 [Service]
 Type=simple
 User=pi
 WorkingDirectory=/home/pi/matrix-web-app
-ExecStart=/usr/bin/npm run start:prod
+ExecStart=/bin/bash -c 'nginx -c /home/pi/matrix-web-app/nginx.conf && npm run start:server:prod'
 Restart=always
 RestartSec=10
-Environment=NODE_ENV=production
 
 [Install]
 WantedBy=multi-user.target 
