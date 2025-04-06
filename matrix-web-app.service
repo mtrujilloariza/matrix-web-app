@@ -6,7 +6,7 @@ After=network.target
 Type=simple
 User=pi
 WorkingDirectory=/home/pi/matrix-web-app
-ExecStart=/usr/bin/npm start:prod
+ExecStart=/usr/bin/npm run start:prod
 Restart=always
 RestartSec=10
 Environment=NODE_ENV=production
