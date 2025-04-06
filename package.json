@@ -11,10 +11,10 @@
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
     "start": "concurrently \"npm run start:ui\" \"npm run start:server\"",
-    "start:ui": "vite preview --host",
+    "start:ui": "npx serve dist -p 4173",
     "start:server": "node server/index.js",
     "start:prod": "concurrently \"npm run start:ui:prod\" \"npm run start:server:prod\"",
-    "start:ui:prod": "vite preview --host",
+    "start:ui:prod": "npx serve dist -p 4173",
     "start:server:prod": "NODE_ENV=production node server/index.js"
   },
   "dependencies": {
