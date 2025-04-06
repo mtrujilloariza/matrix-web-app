@@ -3,10 +3,15 @@
 # Install dependencies and build the app
 ./build.sh
 
-# Create web directory
+# Create web directory and images directories
 echo "Creating web directory..."
 sudo mkdir -p /var/www/matrix-web-app
-sudo mkdir -p /home/pi/matrix-web-app/matrix-images
+sudo mkdir -p /var/www/matrix-web-app/matrix-images
+
+# Set up matrix-images symlink
+echo "Setting up matrix-images symlink..."
+sudo rm -rf /home/pi/matrix-web-app/matrix-images
+sudo ln -sf /var/www/matrix-web-app/matrix-images /home/pi/matrix-web-app/matrix-images
 
 # Copy build files to web directory
 echo "Copying build files..."
@@ -16,8 +21,6 @@ sudo cp -r dist/* /var/www/matrix-web-app/
 echo "Setting permissions..."
 sudo chown -R www-data:www-data /var/www/matrix-web-app
 sudo chmod -R 755 /var/www/matrix-web-app
-sudo chown -R www-data:www-data /home/pi/matrix-web-app/matrix-images
-sudo chmod -R 755 /home/pi/matrix-web-app/matrix-images
 
 # Install nginx if not already installed
 if ! command -v nginx &> /dev/null; then
@@ -82,7 +85,7 @@ server {
 
     # Handle matrix images
     location /matrix-images/ {
-	    root /home/pi/matrix-web-app/matrix-images;
+        alias /var/www/matrix-web-app/matrix-images/;
         autoindex on;
         expires 1h;
         add_header Cache-Control "public, no-transform";

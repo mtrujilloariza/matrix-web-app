@@ -50,9 +50,9 @@ app.use((req, res, next) => {
 });
 
 // Create matrix-images directory if it doesn't exist
-const matrixImagesDir = path.join(process.cwd(), 'matrix-images');
+const matrixImagesDir = '/var/www/matrix-web-app/matrix-images';
 if (!fs.existsSync(matrixImagesDir)) {
-  fs.mkdirSync(matrixImagesDir);
+  fs.mkdirSync(matrixImagesDir, { recursive: true });
 }
 
 app.use(bodyParser.json({ limit: '10mb' }));
