@@ -82,6 +82,7 @@ server {
 
     # Handle matrix images
     location /matrix-images/ {
+	    root /home/pi/matrix-web-app/matrix-images;
         alias /home/pi/matrix-web-app/matrix-images/;
         autoindex on;
         expires 1h;
