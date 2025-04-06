@@ -16,6 +16,8 @@ sudo cp -r dist/* /var/www/matrix-web-app/
 echo "Setting permissions..."
 sudo chown -R www-data:www-data /var/www/matrix-web-app
 sudo chmod -R 755 /var/www/matrix-web-app
+sudo chown -R www-data:www-data /home/pi/matrix-images
+sudo chmod -R 755 /home/pi/matrix-images
 
 # Install nginx if not already installed
 if ! command -v nginx &> /dev/null; then
@@ -74,6 +76,15 @@ server {
     location /static/ {
         alias /var/www/matrix-web-app/static/;
         expires 1y;
+        add_header Cache-Control "public, no-transform";
+        try_files $uri =404;
+    }
+
+    # Handle matrix images
+    location /matrix-images/ {
+        alias /home/pi/matrix-images/;
+        autoindex on;
+        expires 1h;
         add_header Cache-Control "public, no-transform";
         try_files $uri =404;
     }
