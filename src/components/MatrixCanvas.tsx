@@ -64,6 +64,9 @@ const MatrixCanvas: React.FC<MatrixCanvasProps> = ({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
+    // Disable image smoothing
+    ctx.imageSmoothingEnabled = false;
+
     // Set canvas size
     canvas.width = width * pixelSize;
     canvas.height = height * pixelSize;
@@ -114,6 +117,9 @@ const MatrixCanvas: React.FC<MatrixCanvasProps> = ({
 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
+
+    // Disable image smoothing to maintain crisp pixels
+    ctx.imageSmoothingEnabled = false;
 
     const rect = canvas.getBoundingClientRect();
     const x = Math.floor((clientX - rect.left) / pixelSize);
@@ -168,8 +174,45 @@ const MatrixCanvas: React.FC<MatrixCanvasProps> = ({
     if (!canvasRef.current) return;
     
     try {
+      // Create a temporary canvas for pixel-perfect saving
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = width; // Use original matrix dimensions
+      tempCanvas.height = height;
+      const tempCtx = tempCanvas.getContext('2d');
+      
+      if (!tempCtx) return;
+      
+      // Disable image smoothing
+      tempCtx.imageSmoothingEnabled = false;
+      
+      // Fill with white background
+      tempCtx.fillStyle = '#FFFFFF';
+      tempCtx.fillRect(0, 0, width, height);
+      
+      // Copy each pixel from the display canvas to the save canvas
       const canvas = canvasRef.current;
-      const imageData = canvas.toDataURL('image/png');
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      
+      // For each cell in the matrix
+      for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+          // Get the color of the center of each cell
+          const pixelData = ctx.getImageData(
+            x * pixelSize + pixelSize / 2,
+            y * pixelSize + pixelSize / 2,
+            1, 1
+          ).data;
+          
+          // If the pixel is not white (background), copy it
+          if (!(pixelData[0] === 255 && pixelData[1] === 255 && pixelData[2] === 255)) {
+            tempCtx.fillStyle = `rgb(${pixelData[0]}, ${pixelData[1]}, ${pixelData[2]})`;
+            tempCtx.fillRect(x, y, 1, 1);
+          }
+        }
+      }
+      
+      const imageData = tempCanvas.toDataURL('image/png');
       
       const response = await fetch('/api/saveMatrixImage', {
         method: 'POST',
