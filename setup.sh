@@ -7,6 +7,12 @@
 mkdir -p /home/pi/matrix-web-app/dist
 mkdir -p /home/pi/matrix-images
 
+# Set correct permissions for the dist directory
+echo "Setting permissions..."
+sudo chown -R pi:www-data /home/pi/matrix-web-app/dist
+sudo chmod -R 750 /home/pi/matrix-web-app/dist
+sudo chmod g+s /home/pi/matrix-web-app/dist
+
 # Install nginx if not already installed
 if ! command -v nginx &> /dev/null; then
     echo "Installing nginx..."
@@ -60,12 +66,17 @@ server {
     root /home/pi/matrix-web-app/dist;
     index index.html;
 
-    location / {
-        try_files $uri $uri/ /index.html;
+    # Handle static files first
+    location /static/ {
+        alias /home/pi/matrix-web-app/dist/static/;
+        expires 1y;
+        add_header Cache-Control "public, no-transform";
+        try_files $uri =404;
     }
 
-    location /api {
-        proxy_pass http://localhost:3000;
+    # Handle API requests
+    location /api/ {
+        proxy_pass http://localhost:3000/;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
@@ -73,10 +84,17 @@ server {
         proxy_cache_bypass $http_upgrade;
     }
 
-    location /static {
-        alias /home/pi/matrix-web-app/dist/static;
-        expires 1y;
-        add_header Cache-Control "public, no-transform";
+    # Handle all other routes
+    location / {
+        try_files $uri $uri/ /index.html;
+        add_header Cache-Control "no-store, no-cache, must-revalidate";
+    }
+
+    # Prevent access to . files
+    location ~ /\. {
+        deny all;
+        access_log off;
+        log_not_found off;
     }
 }
 EOF
@@ -84,6 +102,9 @@ EOF
 # Enable site configuration
 sudo ln -sf /etc/nginx/sites-available/matrix-web-app /etc/nginx/sites-enabled/
 sudo rm -f /etc/nginx/sites-enabled/default
+
+# Test nginx configuration
+sudo nginx -t
 
 # Install the service
 echo "Installing service..."
@@ -98,6 +119,7 @@ sudo systemctl restart nginx
 echo "Setup complete! The app should now be running."
 echo "You can check the status with: sudo systemctl status matrix-web-app"
 echo "To view logs: sudo journalctl -u matrix-web-app -f"
+echo "To view nginx logs: sudo tail -f /var/log/nginx/error.log"
 echo ""
 echo "The UI will be available at: http://localhost:4173"
 echo "The API server will be available at: http://localhost:3000" 
