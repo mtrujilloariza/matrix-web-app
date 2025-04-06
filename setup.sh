@@ -3,14 +3,19 @@
 # Install dependencies and build the app
 ./build.sh
 
-# Create necessary directories
-mkdir -p /home/pi/matrix-web-app/dist
-mkdir -p /home/pi/matrix-images
+# Create web directory
+echo "Creating web directory..."
+sudo mkdir -p /var/www/matrix-web-app
+sudo mkdir -p /home/pi/matrix-images
 
-# Set correct permissions for the dist directory
+# Copy build files to web directory
+echo "Copying build files..."
+sudo cp -r dist/* /var/www/matrix-web-app/
+
+# Set correct permissions
 echo "Setting permissions..."
-sudo chown -R pi:pi /home/pi/matrix-web-app/dist
-sudo chmod -R 755 /home/pi/matrix-web-app/dist
+sudo chown -R www-data:www-data /var/www/matrix-web-app
+sudo chmod -R 755 /var/www/matrix-web-app
 
 # Install nginx if not already installed
 if ! command -v nginx &> /dev/null; then
@@ -62,12 +67,12 @@ server {
     listen 4173;
     server_name localhost;
 
-    root /home/pi/matrix-web-app/dist;
+    root /var/www/matrix-web-app;
     index index.html;
 
     # Handle static files first
     location /static/ {
-        alias /home/pi/matrix-web-app/dist/static/;
+        alias /var/www/matrix-web-app/static/;
         expires 1y;
         add_header Cache-Control "public, no-transform";
         try_files $uri =404;
