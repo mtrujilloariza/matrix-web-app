@@ -86,7 +86,6 @@ function Admin() {
   const [errorDetails, setErrorDetails] = useState<string | null>(null);
   const [savedImages, setSavedImages] = useState<SavedImage[]>([]);
   const [selectedImage, setSelectedImage] = useState<SavedImage | null>(null);
-  const [message, setMessage] = useState('');
 
   useEffect(() => {
     // Fetch LED service status and saved images when component mounts

@@ -17,7 +17,6 @@ const MatrixCanvas: React.FC<MatrixCanvasProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [color, setColor] = useState('#000000');
-  const [status, setStatus] = useState<string | null>(null);
   const [artistName, setArtistName] = useState('');
   const [artworkName, setArtworkName] = useState('');
   const [pixelSize, setPixelSize] = useState(initialPixelSize);
