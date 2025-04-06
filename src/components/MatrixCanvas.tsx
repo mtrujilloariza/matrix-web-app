@@ -15,6 +15,7 @@ const MatrixCanvas: React.FC<MatrixCanvasProps> = ({
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const canvasStateRef = useRef<ImageData | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [color, setColor] = useState('#000000');
   const [artistName, setArtistName] = useState('');
@@ -38,6 +39,15 @@ const MatrixCanvas: React.FC<MatrixCanvasProps> = ({
       // Use the smaller of the two to ensure the canvas fits
       const newPixelSize = Math.max(1, Math.min(horizontalPixelSize, verticalPixelSize));
       
+      // Save the current canvas state before resizing
+      const canvas = canvasRef.current;
+      if (canvas) {
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          canvasStateRef.current = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        }
+      }
+      
       setPixelSize(newPixelSize);
     };
 
@@ -46,7 +56,7 @@ const MatrixCanvas: React.FC<MatrixCanvasProps> = ({
     return () => window.removeEventListener('resize', updateCanvasSize);
   }, [width, height]);
 
-  // Initialize canvas
+  // Initialize canvas and restore state if available
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -76,6 +86,25 @@ const MatrixCanvas: React.FC<MatrixCanvasProps> = ({
       ctx.moveTo(0, i * pixelSize);
       ctx.lineTo(canvas.width, i * pixelSize);
       ctx.stroke();
+    }
+
+    // Restore previous canvas state if available
+    if (canvasStateRef.current) {
+      // Create a temporary canvas to scale the saved state
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = canvasStateRef.current.width;
+      tempCanvas.height = canvasStateRef.current.height;
+      const tempCtx = tempCanvas.getContext('2d');
+      if (tempCtx) {
+        tempCtx.putImageData(canvasStateRef.current, 0, 0);
+        
+        // Draw the scaled image back to the main canvas
+        ctx.drawImage(
+          tempCanvas,
+          0, 0, tempCanvas.width, tempCanvas.height,
+          0, 0, canvas.width, canvas.height
+        );
+      }
     }
   }, [width, height, pixelSize]);
 
